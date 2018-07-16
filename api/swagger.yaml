@@ -1,0 +1,238 @@
+---
+swagger: "2.0"
+info:
+  description: "This is a simple API for managing a TODO List"
+  version: "1.0.0"
+  title: "Simple ToDo API"
+  contact:
+    email: "recruiting@dfsco.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "virtserver.swaggerhub.com"
+basePath: "/aweiker/ToDo/1.0.0"
+tags:
+- name: "todo"
+  description: "Doing the things that need to be done"
+schemes:
+- "https"
+paths:
+  /lists:
+    get:
+      tags:
+      - "todo"
+      summary: "returns all of the available lists"
+      description: "Searches the todo lists that are available\n"
+      operationId: "searchLists"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "searchString"
+        in: "query"
+        description: "pass an optional search string for looking up a list"
+        required: false
+        type: "string"
+        x-exportParamName: "SearchString"
+      - name: "skip"
+        in: "query"
+        description: "number of records to skip for pagination"
+        required: false
+        type: "integer"
+        minimum: 0
+        format: "int32"
+        x-exportParamName: "Skip"
+      - name: "limit"
+        in: "query"
+        description: "maximum number of records to return"
+        required: false
+        type: "integer"
+        maximum: 50.0
+        minimum: 0
+        format: "int32"
+        x-exportParamName: "Limit"
+      responses:
+        200:
+          description: "search results matching criteria"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/TodoList"
+        400:
+          description: "bad input parameter"
+    post:
+      tags:
+      - "todo"
+      summary: "creates a new list"
+      description: "Adds a list to the system"
+      operationId: "addList"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "todoList"
+        description: "ToDo list to add"
+        required: false
+        schema:
+          $ref: "#/definitions/TodoList"
+        x-exportParamName: "TodoList"
+      responses:
+        201:
+          description: "item created"
+        400:
+          description: "invalid input, object invalid"
+        409:
+          description: "an existing item already exists"
+  /list/{id}:
+    get:
+      tags:
+      - "todo"
+      summary: "return the specified todo list"
+      operationId: "getList"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "The unique identifier of the list"
+        required: true
+        type: "string"
+        format: "uuid"
+        x-exportParamName: "Id"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/TodoList"
+        400:
+          description: "Invalid id supplied"
+        404:
+          description: "List not found"
+  /list/{id}/tasks:
+    post:
+      tags:
+      - "todo"
+      summary: "add a new task to the todo list"
+      operationId: "addTask"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "Unique identifier of the list to add the task for"
+        required: true
+        type: "string"
+        format: "uuid"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "task"
+        description: "task to add"
+        required: false
+        schema:
+          $ref: "#/definitions/Task"
+        x-exportParamName: "Task"
+      responses:
+        201:
+          description: "item created"
+        400:
+          description: "invalid input, object invalid"
+        409:
+          description: "an existing item already exists"
+  /list/{id}/task/{taskId}/complete:
+    post:
+      tags:
+      - "todo"
+      summary: "updates the completed state of a task"
+      operationId: "putTask"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "Unique identifier of the list to add the task for"
+        required: true
+        type: "string"
+        format: "uuid"
+        x-exportParamName: "Id"
+      - name: "taskId"
+        in: "path"
+        description: "Unique identifier task to complete"
+        required: true
+        type: "string"
+        format: "uuid"
+        x-exportParamName: "TaskId"
+      - in: "body"
+        name: "task"
+        description: "task to add"
+        required: false
+        schema:
+          $ref: "#/definitions/CompletedTask"
+        x-exportParamName: "Task"
+      responses:
+        201:
+          description: "item updated"
+        400:
+          description: "invalid input, object invalid"
+definitions:
+  TodoList:
+    type: "object"
+    required:
+    - "id"
+    - "name"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+      name:
+        type: "string"
+        example: "Home"
+      description:
+        type: "string"
+        example: "The list of things that need to be done at home\n"
+      tasks:
+        type: "array"
+        items:
+          $ref: "#/definitions/Task"
+    example:
+      name: "Home"
+      description: "The list of things that need to be done at home\n"
+      id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+      tasks:
+      - name: "mow the yard"
+        id: "0e2ac84f-f723-4f24-878b-44e63e7ae580"
+        completed: true
+      - name: "mow the yard"
+        id: "0e2ac84f-f723-4f24-878b-44e63e7ae580"
+        completed: true
+  Task:
+    required:
+    - "id"
+    - "name"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        example: "0e2ac84f-f723-4f24-878b-44e63e7ae580"
+      name:
+        type: "string"
+        example: "mow the yard"
+      completed:
+        type: "boolean"
+        example: true
+        default: false
+    example:
+      name: "mow the yard"
+      id: "0e2ac84f-f723-4f24-878b-44e63e7ae580"
+      completed: true
+  CompletedTask:
+    required:
+    - "completed"
+    properties:
+      completed:
+        type: "boolean"
+        example: true
+        default: false
+    example:
+      completed: true

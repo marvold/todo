@@ -11,6 +11,5 @@
 package swagger
 
 type CompletedTask struct {
-
 	Completed bool `json:"completed"`
 }

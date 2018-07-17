@@ -11,30 +11,127 @@
 package swagger
 
 import (
+	"encoding/json"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
+	"github.com/marvold/todo/model"
 )
 
 func AddList(w http.ResponseWriter, r *http.Request) {
+	status := http.StatusBadRequest
+
+	// Parse the JSON and add the list.
+	body := model.TodoList{}
+	if json.NewDecoder(r.Body).Decode(&body) == nil {
+		status = model.AddList(body)
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 }
 
 func AddTask(w http.ResponseWriter, r *http.Request) {
+	status := http.StatusBadRequest
+
+	// Get the list ID.
+	id, ok := mux.Vars(r)["id"]
+	if ok {
+		// Parse the JSON and add the task.
+		body := model.Task{}
+		if json.NewDecoder(r.Body).Decode(&body) == nil {
+			status = model.AddTask(id, body)
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 }
 
 func GetList(w http.ResponseWriter, r *http.Request) {
+	// Get the list ID.
+	id, ok := mux.Vars(r)["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Get the list.
+	response, status := model.GetList(id)
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
+	if status == http.StatusOK {
+		// Encode the result.
+		json.NewEncoder(w).Encode(response)
+	}
 }
 
 func PutTask(w http.ResponseWriter, r *http.Request) {
+	status := http.StatusBadRequest
+
+	// Get the list and task IDs.
+	id, ok := mux.Vars(r)["id"]
+	if ok {
+		taskID, ok := mux.Vars(r)["taskId"]
+		if ok {
+			// Parse the JSON and set the completed flag.
+			body := model.CompletedTask{}
+			if json.NewDecoder(r.Body).Decode(&body) == nil {
+				status = model.SetCompleted(id, taskID, body)
+			}
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 }
 
 func SearchLists(w http.ResponseWriter, r *http.Request) {
+	// Default parameters if not passed.
+	searchString := ""
+	skip := 0
+	limit := 0
+
+	var err error
+	for k, v := range r.URL.Query() {
+		if len(v) != 1 {
+			// We won't accept two copies of a parameter.
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// Parse parameters.  We will check their values in the lower-level API,
+		// we just convert from strings here.
+		switch k {
+		case "searchString":
+			searchString = v[0]
+		case "skip":
+			skip, err = strconv.Atoi(v[0])
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		case "limit":
+			limit, err = strconv.Atoi(v[0])
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Get the lists.
+	response, status := model.GetLists(searchString, skip, limit)
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
+	if status == http.StatusOK {
+		// Encode the result.
+		json.NewEncoder(w).Encode(response)
+	}
 }
